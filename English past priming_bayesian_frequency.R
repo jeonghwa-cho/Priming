@@ -4,11 +4,10 @@ library(tidyverse)
 
 ###BAYESIAN####
 
-#data2<-read.csv("English_past_trimmed.csv")
-data2<-read.csv("G:/My Drive/Research/Past priming/rawdata/English_past_trimmed.csv")
+data2<-read.csv("English_past_trimmed.csv")
 
-prime <- read.csv("G:/My Drive/Research/Past priming/rawdata/prime_char.csv")
-target <- read.csv("G:/My Drive/Research/Past priming/rawdata/target_char.csv")
+prime <- read.csv("prime_char.csv")
+target <- read.csv("target_char.csv")
 
 data2<-merge(data2, prime, by="prime")
 data2<-merge(data2, target, by="target")
