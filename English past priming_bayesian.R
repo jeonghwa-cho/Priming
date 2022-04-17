@@ -24,7 +24,7 @@ sigma2=mu2*sqrt(exp(sigma^2)-1)
 
 #sigma: exponential distribution -exp(1)
 
-
+#simple version
 f2<-brm(rt~condition2*type2*SOA2+primeLength.c+targetLength.c+(1|participant)+(1|item), 
         data=data2, 
         prior = c(
@@ -32,6 +32,18 @@ f2<-brm(rt~condition2*type2*SOA2+primeLength.c+targetLength.c+(1|participant)+(1
           prior(normal(0, 1), class = b)
         ),
         family=shifted_lognormal())
+
+#full version (updated)
+mfull<-brm(rt~condition2*type2*SOA2+primeLength.c+targetLength.c+(1+condition2*type2*SOA2||participant)+(1+condition2*type2*SOA2||item),
+           data=data2,
+           prior = c(
+             prior(normal(6, 1.5), class = Intercept),
+             prior(normal(0, 1), class = b)
+           ),
+           iter = 3000, 
+           warmup = 2000,
+           control = list(adapt_delta = 0.99),
+           family=shifted_lognormal())
 
 
 summary(f2)
