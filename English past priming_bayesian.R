@@ -33,6 +33,12 @@ f2<-brm(rt~condition2*type2*SOA2+primeLength.c+targetLength.c+(1|participant)+(1
         ),
         family=shifted_lognormal())
 
+summary(f2)
+plot(f2)
+pp_check(f2)
+mcmc_plot(f2)
+mcmc_plot(f2, "^b_[^I]")
+
 #full version (updated)
 mfull<-brm(rt~condition2*type2*SOA2+primeLength.c+targetLength.c+(1+condition2*type2*SOA2||participant)+(1+condition2*type2*SOA2||item),
            data=data2,
@@ -44,13 +50,6 @@ mfull<-brm(rt~condition2*type2*SOA2+primeLength.c+targetLength.c+(1+condition2*t
            warmup = 2000,
            control = list(adapt_delta = 0.99),
            family=shifted_lognormal())
-
-
-summary(f2)
-plot(f2)
-pp_check(f2)
-mcmc_plot(f2)
-mcmc_plot(f2, "^b_[^I]")
 
 f3<-brm(rt~condition2*type2*SOA2+primeLength.c+targetLength.c+(1|participant)+(1|item), data=data2)
 summary(f3)
