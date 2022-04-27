@@ -10,6 +10,14 @@ library(emmeans)
 
 data2 <- read_csv("English_past_trimmed.csv")
 
+# merge with word frequencies
+
+prime <- read.csv("prime_char.csv")
+target <- read.csv("target_char.csv")
+
+data2<-merge(data2, prime, by="prime")
+data2<-merge(data2, target, by="target")
+
 # prep condition info
 
 data2 <- data2 %>%
@@ -32,7 +40,9 @@ data2 <- data2 %>%
 data2 <- data2 %>%
   mutate(primelength = str_length(prime)) %>%
   mutate(primelength.c = scale(primelength, center=TRUE, scale=FALSE),
-         targetlength.c = scale(wordlength, center=TRUE, scale=FALSE)) 
+         targetlength.c = scale(wordlength, center=TRUE, scale=FALSE),
+         prime_freq.c = scale(prime_freq, center=TRUE, scale=FALSE),
+         target_freq.c = scale(target_freq, center=TRUE, scale=FALSE)) 
 
 # to set reasonably weakly-informative priors  
 mu=mean(log(data2$rt))
@@ -110,6 +120,16 @@ mcmc_plot(m_test, "^b_[^I]")
 
 # fit model
 f2<-brm(rt ~ cond * type * SOA + primeLength.c + targetLength.c + 
+          (1 | participant) + 
+          (1 | item), 
+        data=data2, 
+        prior = my_priors,
+        cores=4,
+        iter = 8000,
+        family=lognormal())
+
+# fit model (frequency included)
+f2<-brm(rt ~ cond * type * SOA * prime_freq.c * target_freq.c + primeLength.c + targetLength.c + 
           (1 | participant) + 
           (1 | item), 
         data=data2, 
