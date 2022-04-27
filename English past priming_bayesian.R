@@ -129,7 +129,10 @@ save(f2, file='model-simple.Rda')
 
 # plot estimated effects
 
+color_scheme_set('red')
 mcmc_areas_ridges(f2, regex_pars="^b_[^I]")
+
+
 
 # Many ways to plot expected values across conditions!
 
