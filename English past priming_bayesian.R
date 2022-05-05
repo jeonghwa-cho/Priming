@@ -117,16 +117,16 @@ mcmc_plot(m_test, "^b_[^I]")
 ##################
 # simple version #
 ##################
-
-# fit model
-f2<-brm(rt ~ cond * type * SOA + primeLength.c + targetLength.c + 
-          (1 | participant) + 
-          (1 | item), 
-        data=data2, 
-        prior = my_priors,
-        cores=4,
-        iter = 8000,
-        family=lognormal())
+# 
+# # fit model
+# f2<-brm(rt ~ cond * type * SOA + primeLength.c + targetLength.c + 
+#           (1 | participant) + 
+#           (1 | item), 
+#         data=data2, 
+#         prior = my_priors,
+#         cores=4,
+#         iter = 8000,
+#         family=lognormal())
 
 # fit model (frequency included)
 f2<-brm(rt ~ cond * type * SOA * prime_freq.c * target_freq.c + primeLength.c + targetLength.c + 
@@ -152,6 +152,61 @@ save(f2, file='model-simple.Rda')
 color_scheme_set('red')
 mcmc_areas_ridges(f2, regex_pars="^b_[^I]")
 
+
+
+# Test specific hypotheses
+
+# - orthographic, masked : test > identity
+H = ' (typeOrthographical + condTest + condTest:typeOrthographical) >
+      (typeOrthographical)'
+hypothesis(f2, H)
+
+# - masked, test : ortho = morph priming?
+H = '(condTest + typeOrthographical + condTest:typeOrthographical) = 
+      condTest'
+hypothesis(f2, H)
+
+# - masked, control : ortho = morph priming?
+H = '(condControl + typeOrthographical + condControl:typeOrthographical) = 
+      condControl'
+hypothesis(f2, H)
+
+# - masked, test-control : ortho = morph priming?
+H = '(condTest + typeOrthographical + condTest:typeOrthographical) - 
+     (condControl + typeOrthographical + condControl:typeOrthographical) = 
+      (condTest - condControl)'
+hypothesis(f2, H)
+
+
+# - unmasked, test - control : ortho:prime.freq > morph:prime.freq
+
+H = '(SOAunmasked + condTest + typeOrthographical + prime_freq.c + 
+    condTest:SOAunmasked + 
+    condTest:typeOrthographical + 
+    condTest:prime_freq.c + 
+    condTest:typeOrthographical:SOAunmasked + 
+    condTest:typeOrthographical:prime_freq.c + 
+    condTest:SOAunmasked:prime_freq.c +
+    typeOrthographical:SOAunmasked:prime_freq.c +
+    condTest:typeOrthographical:SOAunmasked:prime_freq.c) -
+    (SOAunmasked + condControl + typeOrthographical + prime_freq.c + 
+    condControl:SOAunmasked + 
+    condControl:typeOrthographical + 
+    condControl:prime_freq.c + 
+    condControl:typeOrthographical:SOAunmasked + 
+    condControl:typeOrthographical:prime_freq.c + 
+    condControl:SOAunmasked:prime_freq.c +
+    typeOrthographical:SOAunmasked:prime_freq.c +
+    condControl:typeOrthographical:SOAunmasked:prime_freq.c) >
+    (SOAunmasked + condTest + prime_freq.c + 
+    condTest:SOAunmasked + 
+    condTest:prime_freq.c + 
+    condTest:SOAunmasked:prime_freq.c) -
+    (SOAunmasked + condControl + prime_freq.c + 
+    condControl:SOAunmasked + 
+    condControl:prime_freq.c + 
+    condControl:SOAunmasked:prime_freq.c) '
+hypothesis(f2, H)
 
 
 # Many ways to plot expected values across conditions!
