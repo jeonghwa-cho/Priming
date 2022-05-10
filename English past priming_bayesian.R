@@ -76,6 +76,7 @@ my_priors <- c(
         prior = my_priors,
         cores = 4,
         iter=8000,
+        sample_prior = TRUE,
         family= lognormal() ) -> m_test
   
   m_test
@@ -117,7 +118,6 @@ mcmc_plot(m_test, "^b_[^I]")
 ##################
 # simple version #
 ##################
-# 
 # # fit model
 # f2<-brm(rt ~ cond * type * SOA + primeLength.c + targetLength.c + 
 #           (1 | participant) + 
@@ -136,6 +136,9 @@ f2<-brm(rt ~ cond * type * SOA * prime_freq.c * target_freq.c + primeLength.c + 
         prior = my_priors,
         cores=4,
         iter = 8000,
+#        opencl = opencl(c(0, 0)),
+        sample_prior = TRUE,
+        backend = 'cmdstanr',
         family=lognormal())
 
 summary(f2)
@@ -265,6 +268,14 @@ my_draws_2 %>%
 
 
 # TAKE-AWAYS: conditional_effects (1), emmeans (2), emmeans+tidybayes (3) and just tidybayes with covariates set to zero/NA (5) are all equivalent and look good; DO NOT average tidybayes draws from every datapoint!!! (4)
+
+
+## Test hypotheses?
+
+hypothesis(f2, '(condTest - condControl) < 
+                ((condTest + typeOrthographical + condTest:typeOrthographical) - 
+                 (condControl + typeOrthographical + condControl:typeOrthographical))') 
+
 
 #########################
 #full version (updated) #
