@@ -10,9 +10,9 @@
 setwd('/Users/jobrenn/Documents/Projects/cho-priming/')
 
 library(tidyverse)
-library(future.apply)
+library(future.apply) # parallel future_replicate()
 
-plan(multisession) # parallel replicate()
+plan(multisession) 
 
 prop.se <- function(x) {
   p = mean(x)
