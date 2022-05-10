@@ -4,12 +4,21 @@
 # Setup #
 #########
 
+#TODO: speed these up with parallel computation
+# <https://cran.r-project.org/web/packages/future.apply/index.html>
+
 setwd('/Users/jobrenn/Documents/Projects/cho-priming/')
 
 library(tidyverse)
-library(faux)
+library(future.apply)
 
-options(dplyr.summarise.inform = FALSE)
+plan(multisession) # parallel replicate()
+
+prop.se <- function(x) {
+  p = mean(x)
+  n = length(x)
+  sqrt((p * (1-p))/n)
+}
 
 ########
 # Load #
@@ -120,23 +129,29 @@ sim_one <- function(eff=10, Np=40, Nk=100, Nd=25, I = 700, err_b = 120, err_w=0.
   sim_data <- sim_data %>% bind_rows(.id = 'ID')
   stat <- sim_data %>%
     group_by(ID, cond) %>%
-    summarize(rt = mean(log(rt))) %>%
+    summarize(rt = mean(log(rt)), .groups='drop') %>%
     t.test(rt ~ cond, paired = TRUE, data = .)
   is_sig <- ifelse(stat$statistic < 0 & stat$p.value <= 0.05, 1, 0)
 }
 
 sim_many <- function(eff, Np, Nk, Nd, I, err_b, err_w) {
   cat('Running', Nk, 'simulations with N =', Np, 'and effect =', eff, 'ms\n')
-  pwr <- replicate(Nk, sim_one(eff=eff, Np=Np, Nk=Nk, Nd=Nd,
+  pwr <- future_replicate(Nk, sim_one(eff=eff, Np=Np, Nk=Nk, Nd=Nd,
                                I=I, err_b=err_b, err_w=err_w) )
+  P    <- mean(pwr)
+  P.se <- prop.se(pwr)
   tibble(
     Np = Np,
     Nk = Nk,
     Nd = Nd,
     E  = eff,
-    P  = mean(pwr)
+    P  = P,
+    P.upper = P + 2 * P.se,
+    P.lower = P - 2 * P.se
   )
 }
+
+
 
 sim_params <-
   expand_grid(
@@ -147,24 +162,48 @@ sim_params <-
   )
 
 # run sim!
-
+system.time(
 all_sims <- map2_dfr(sim_params$eff, 
                      sim_params$Np, 
                      ~ sim_many(eff=.x, Np=.y, Nd=25, Nk=100,
                                 I=hp$I, err_b = hp$err_b, err_w=hp$err_w) )
-
+)
 
 save(all_sims,  file='simulated-experiments.Rda')
 
 # plot!
 
 all_sims %>%
-  ggplot(aes(y = P, x = Np, col=factor(E))) +
+  ggplot(aes(y = P, x = Np, col=factor(E), ymin=P.lower, ymax=P.upper)) +
   geom_line() +
+#  geom_errorbar(col='darkgrey', width=1) +
+  geom_ribbon(aes(fill=factor(E)), alpha=0.2, colour=NA) +
   geom_point() +
-  scale_color_brewer('Effect Size', type='qual', palette=2) +
+  scale_color_brewer('Effect Size (ms)', type='qual', palette=2) +
+  scale_fill_brewer('Effect Size (ms)', type='qual', palette=2) +
   scale_x_continuous('# Participants', breaks=sim_params$Np) +
   scale_y_continuous('Estimated Power', limits=c(0, 1)) 
+
+## TESTING PARALLELS
+
+plan(sequential)
+system.time(
+sim_many(eff=10, Np=100, Nd=25, Nk=100,
+         I=hp$I, err_b = hp$err_b, err_w=hp$err_w) 
+)
+
+plan(multicore)
+system.time(
+  sim_many(eff=10, Np=100, Nd=25, Nk=100,
+           I=hp$I, err_b = hp$err_b, err_w=hp$err_w) 
+)
+
+plan(multisession)
+system.time(
+  sim_many(eff=10, Np=100, Nd=25, Nk=100,
+           I=hp$I, err_b = hp$err_b, err_w=hp$err_w) 
+)
+
 
 
 ##################
@@ -212,10 +251,3 @@ all_resample_sims %>%
 save(all_sims, all_resample_sims,  file='simulated-experiments.Rda')
 
 
-##############
-# Faux-based #
-##############
-
-###############
-# Bayes-based #
-###############
