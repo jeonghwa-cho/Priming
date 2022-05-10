@@ -75,6 +75,8 @@ data3 <- data2 %>%
 hp <- list()
 
 hp$eff <- data3 %>% # raw effect in msec
+  group_by(participant, cond) %>%
+  summarize(rt = mean(rt)) %>%
   group_by(cond) %>%
   summarize(rt = mean(rt)) %>%
   pull(rt) %>%
@@ -140,7 +142,7 @@ sim_params <-
   expand_grid(
 #    eff = c(10, 20, 30),
     #Np = c(20, 40, 60, 80, 100, 120)
-    eff = c(5, 10, 20, 30),
+    eff = c(5, 7, 10, 20),
     Np = c(20, 40, 60, 80, 100, 120, 140)
   )
 
@@ -151,7 +153,8 @@ all_sims <- map2_dfr(sim_params$eff,
                      ~ sim_many(eff=.x, Np=.y, Nd=25, Nk=100,
                                 I=hp$I, err_b = hp$err_b, err_w=hp$err_w) )
 
-save(all_sims, file='simulated-experiments.Rda')
+
+save(all_sims,  file='simulated-experiments.Rda')
 
 # plot!
 
@@ -159,11 +162,9 @@ all_sims %>%
   ggplot(aes(y = P, x = Np, col=factor(E))) +
   geom_line() +
   geom_point() +
-  scale_color_brewer('Effect Size', type='qual', palette=1) +
+  scale_color_brewer('Effect Size', type='qual', palette=2) +
   scale_x_continuous('# Participants', breaks=sim_params$Np) +
-  scale_y_continuous('Estimated Power', limits=c(0, 1)) +
-  theme_classic()
-
+  scale_y_continuous('Estimated Power', limits=c(0, 1)) 
 
 
 ##################
@@ -206,8 +207,10 @@ all_resample_sims %>%
   geom_line() +
   geom_point() +
   ylim(0, 1) +
-  scale_x_continuous(breaks=Np) +
-  theme_classic()
+  scale_x_continuous(breaks=Np) 
+
+save(all_sims, all_resample_sims,  file='simulated-experiments.Rda')
+
 
 ##############
 # Faux-based #
