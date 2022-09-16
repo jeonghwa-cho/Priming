@@ -138,6 +138,8 @@ sim_many <- function(eff, Np, Nk, Nd, I, err_b, err_w) {
   cat('Running', Nk, 'simulations with N =', Np, 'and effect =', eff, 'ms\n')
   pwr <- future_replicate(Nk, sim_one(eff=eff, Np=Np, Nk=Nk, Nd=Nd,
                                I=I, err_b=err_b, err_w=err_w) )
+#  pwr <- replicate(Nk, sim_one(eff=eff, Np=Np, Nk=Nk, Nd=Nd,
+#                                      I=I, err_b=err_b, err_w=err_w) )
   P    <- mean(pwr)
   P.se <- prop.se(pwr)
   tibble(
@@ -157,15 +159,17 @@ sim_params <-
   expand_grid(
 #    eff = c(10, 20, 30),
     #Np = c(20, 40, 60, 80, 100, 120)
-    eff = c(5, 7, 10, 20),
-    Np = c(20, 40, 60, 80, 100, 120, 140)
+    eff = c(5, 10, 20, 30),
+    Np = c(2:10 %o% 10^(1:2))
   )
 
 # run sim!
+#plan(sequential) # just 1 effect: 229 sec
+plan(multisession) # just 1 effect: 49 sec
 system.time(
 all_sims <- map2_dfr(sim_params$eff, 
                      sim_params$Np, 
-                     ~ sim_many(eff=.x, Np=.y, Nd=25, Nk=100,
+                     ~ sim_many(eff=.x, Np=.y, Nd=25, Nk=500,
                                 I=hp$I, err_b = hp$err_b, err_w=hp$err_w) )
 )
 
@@ -177,12 +181,17 @@ all_sims %>%
   ggplot(aes(y = P, x = Np, col=factor(E), ymin=P.lower, ymax=P.upper)) +
   geom_line() +
 #  geom_errorbar(col='darkgrey', width=1) +
-  geom_ribbon(aes(fill=factor(E)), alpha=0.2, colour=NA) +
+#  geom_ribbon(aes(fill=factor(E)), alpha=0.2, colour=NA) +
   geom_point() +
   scale_color_brewer('Effect Size (ms)', type='qual', palette=2) +
   scale_fill_brewer('Effect Size (ms)', type='qual', palette=2) +
-  scale_x_continuous('# Participants', breaks=sim_params$Np) +
-  scale_y_continuous('Estimated Power', limits=c(0, 1)) 
+  scale_x_continuous('# Participants', trans='log10') +
+  scale_y_continuous('Estimated Power', limits=c(0, 1)) +
+  annotate('text', x=41, y=0.5, label='previous\n studies', hjust=0) +
+  annotate('text', x=125, y=0.5, label='current\n study', hjust=0) +
+  geom_vline( xintercept=c(40, 120), linetype=c(3,2)) +
+  theme_classic() +
+  theme(legend.position=c(.8, y=.2))
 
 ## TESTING PARALLELS
 
